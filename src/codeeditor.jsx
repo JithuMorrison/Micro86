@@ -5,7 +5,7 @@ import MonacoEditor from '@monaco-editor/react';
 
 
 
-const CodeEditor = ({code,setCode,handleSubmit}) => {
+const CodeEditor = ({code,setCode,handleSubmit,handleInter}) => {
 
   const handleEditorChange = (value) => {
     setCode(value);
@@ -14,7 +14,7 @@ const CodeEditor = ({code,setCode,handleSubmit}) => {
   return (
       <div>
           <div className="button-row">
-            <button className="btn">Compile</button>
+            <button className="btn" onClick={handleInter}>Interrupt</button>
             <button className="btn"onClick={handleSubmit}>Run</button>
             <button className="btn">Download</button>
             <button className="btn">Copy</button>

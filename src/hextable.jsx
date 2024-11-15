@@ -55,7 +55,7 @@ const HexTable = ({ hexDict }) => {
                           (colIndex * 256 + rowIndex + 4096)
                             .toString(16)
                             .toUpperCase()
-                        ]
+                        ].toString(16).toUpperCase()
                       : 0}
                   </td>
                 ))}

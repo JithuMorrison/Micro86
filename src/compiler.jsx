@@ -6,7 +6,7 @@ import ParallelInterface from "./parallelinterface";
 import CROSignal from "./cro";
 import KeyboardDisplayController from "./Keyboard";
 
-const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC) => {
+const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC,interupt,model,crotrue,croval) => {
   const registers = { AX: 0, BX: 0, CX: 0, DX: 0 };
   const memory = { ...hexDict };
   const pointers = { SI: 0, DI: 0, BP: 0, SP: 0 };
@@ -35,6 +35,7 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC) => {
 
   const lines = code.split("\n").filter((line) => line.trim() !== "");
   const convertHexToBCD = (hexNum) => {
+    hexNum = parseInt(hexNum).toString(16).toUpperCase();
     if (hexNum.length !== 2) {
       return 'Invalid input: Enter a two-digit hex number';
     }
@@ -45,10 +46,9 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC) => {
   let i = 0;
   let controlword=0;
   let mode=0;
-  while (i < lines.length) {
+  while (i < lines.length && !interupt) {
     const line = lines[i];
     const parts = line.trim().split(/[\s,]+/);
-    console.log(parts);
     const instruction = parts[0];
 
     switch (instruction) {
@@ -59,7 +59,7 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC) => {
           !(parts[2].endsWith("]") && parts[2].startsWith("[")) &&
           !["AX", "BX", "CX", "DX"].includes(parts[2])
         ) {
-          const [reg, value] = [parts[1], parseInt(parts[2])];
+          const [reg, value] = [parts[1], parseInt(parts[2],16)];
           registers[reg] = value;
         } else if (
           ["AX", "BX", "CX", "DX"].includes(parts[1]) &&
@@ -69,7 +69,6 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC) => {
         ) {
           const [reg, value] = [parts[1], parts[2].slice(1, -1)];
           if (["SI", "DI", "BP", "SP"].includes(value)) {
-            console.log("Hello");
             registers[reg] =
               memory[pointers[value].toString(16).toUpperCase()] +
               memory[
@@ -117,7 +116,7 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC) => {
           !(parts[2].endsWith("]") && parts[2].startsWith("[")) &&
           !["AL", "BL", "CL", "DL"].includes(parts[2])
         ) {
-          const [reg, value] = [parts[1], parseInt(parts[2])];
+          const [reg, value] = [parts[1], parseInt(parts[2],16)];
           registers[ch[reg]] = value;
         } else if (
           ["AL", "BL", "CL", "DL"].includes(parts[1]) &&
@@ -127,9 +126,6 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC) => {
         ) {
           const [reg, value] = [parts[1], parts[2].slice(1, -1)];
           if (["SI", "DI", "BP", "SP"].includes(value)) {
-            console.log(
-              "Hello" + memory[pointers[value].toString(16).toUpperCase()],
-            );
             registers[ch[reg]] =
               memory[pointers[value].toString(16).toUpperCase()];
             vki = 1;
@@ -164,7 +160,7 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC) => {
           !(parts[2].endsWith("]") && parts[2].startsWith("[")) &&
           !["AH", "BH", "CH", "DH"].includes(parts[2])
         ) {
-          const [reg, value] = [parts[1], parseInt(parts[2])];
+          const [reg, value] = [parts[1], parseInt(parts[2],16)];
           registers[ch[reg]] = value * 256;
         } else if (
           ["AH", "BH", "CH", "DH"].includes(parts[1]) &&
@@ -330,38 +326,43 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC) => {
 
       case "JNC":
         if (flag["CF"] == 0 && i != parseInt(parts[1]) - 1) {
-          i = parseInt(parts[1]) - 1;
+          i = parseInt(parts[1]) - 2;
         }
         break;
 
       case "JNB":
         if (flag["CF"] == 0 && i != parseInt(parts[1]) - 1) {
-          i = parseInt(parts[1]) - 1;
+          i = parseInt(parts[1]) - 2;
         }
         break;
 
       case "JNZ":
         if (flag["ZF"] == 1 && i != parseInt(parts[1]) - 1) {
-          i = parseInt(parts[1]) - 1;
+          i = parseInt(parts[1]) - 2;
         }
         break;
 
       case "JC":
         if (flag["CF"] != 0 && i != parseInt(parts[1]) - 1) {
-          i = parseInt(parts[1]) - 1;
+          i = parseInt(parts[1]) - 2;
         }
         break;
 
       case "JB":
         if (flag["CF"] != 0 && i != parseInt(parts[1]) - 1) {
-          i = parseInt(parts[1]) - 1;
+          i = parseInt(parts[1]) - 2;
         }
         break;
 
       case "JZ":
         if (flag["ZF"] != 1 && i != parseInt(parts[1]) - 1) {
-          i = parseInt(parts[1]) - 1;
+          i = parseInt(parts[1]) - 2;
         }
+        break;
+      
+      case "JMP":
+        i = parseInt(parts[1])-1;
+        console.log("jump"+i);
         break;
 
       case "INC":
@@ -372,7 +373,6 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC) => {
         } else if (["CL"].includes(parts[1])) {
           registers["CX"]++;
         } else if (["SI", "DI", "BP", "SP"].includes(parts[1])) {
-          console.log(pointers[parts[1]]);
           pointers[parts[1]] = pointers[parts[1]] + vki;
         }
         break;
@@ -400,132 +400,174 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC) => {
         }
         break;
       case "OUT":
-        if(["C6"].includes(parts[1])){
-          if(parts[2]=="AL"){
-            controlword = convertHexToBCD(registers["AX"].toString());
-          }
-          else{
-            controlword = convertHexToBCD(parts[2]);
-          }
-          if(controlword[0]=="0"){
-            const binaryValue = controlword.slice(4, 7); 
-            let lightIndex = parseInt(binaryValue, 2); 
-            console.log(lightIndex);
-            if (lightIndex < 2 || lightIndex==3 || lightIndex==5 || lightIndex==7) { 
-              if(lightIndex==3){
-                lightIndex=2;
-              }
-              if(lightIndex==5){
-                lightIndex=3;
-              }
-              if(lightIndex==7){
-                lightIndex=4;
-              }
-              const bitValue = controlword[7] === '1'; 
-              setPortC((prevPortC) => {
-                const newLights = [...prevPortC.lights];
-                newLights[lightIndex] = bitValue;
-                return { ...prevPortC, lights: newLights };
-              });
+        if(model == "parallel_interface"){
+          if(["C6"].includes(parts[1])){
+            if(parts[2]=="AL"){
+              controlword = convertHexToBCD(registers["AX"].toString());
             }
-          }
-          else{
-            if (controlword[1]=="0"){
-              if(controlword[2]=="0"){
-                mode = 0
-              }
-              else{
-                mode=1
+            else{
+              controlword = convertHexToBCD(parts[2]);
+            }
+            if(controlword[0]=="0"){
+              const binaryValue = controlword.slice(4, 7); 
+              let lightIndex = parseInt(binaryValue, 2);
+              if (lightIndex < 2 || lightIndex==3 || lightIndex==5 || lightIndex==7) { 
+                if(lightIndex==3){
+                  lightIndex=2;
+                }
+                if(lightIndex==5){
+                  lightIndex=3;
+                }
+                if(lightIndex==7){
+                  lightIndex=4;
+                }
+                const bitValue = controlword[7] === '1'; 
+                setPortC((prevPortC) => {
+                  const newLights = [...prevPortC.lights];
+                  newLights[lightIndex] = bitValue;
+                  return { ...prevPortC, lights: newLights };
+                });
               }
             }
             else{
-              mode = 2
+              if (controlword[1]=="0"){
+                if(controlword[2]=="0"){
+                  mode = 0
+                }
+                else{
+                  mode=1
+                }
+              }
+              else{
+                mode = 2
+              }
             }
           }
-        }
-        else if(parts[1]=="C2"){
-          if(controlword[6]=="0"){
-            if(parts[2]=="AL"){
-              const valnew = registers["AX"];
-              if(mode==0){
+          else if(parts[1]=="C2"){
+            if(controlword[6]=="0"){
+              if(parts[2]=="AL"){
+                const valnew = registers["AX"];
+                if(mode==0){
+                  let binaryString = parseInt(valnew, 16).toString(2);
+                  binaryString = binaryString.padStart(8, '0');
+                  setPortB(Array.from(binaryString).map(bit => bit === '1'));
+                }
+                else if(mode==1){
+                  let binaryString = parseInt(valnew, 16).toString(2);
+                  binaryString = binaryString.padStart(8, '0');
+                  setPortB(Array.from(binaryString).map(bit => bit === '1'));
+                }
+              }
+            }
+          }
+          else if(parts[1]=="C4"){
+            if(controlword[4]=="0"){
+              if(parts[2]=="AL"){
+                const valnew = registers["AX"];
                 let binaryString = parseInt(valnew, 16).toString(2);
                 binaryString = binaryString.padStart(8, '0');
-                setPortB(Array.from(binaryString).map(bit => bit === '1'));
+                const indicesOfOnes = [];
+                let k=0;
+                for (let i = 0; i < 8; i++) {
+                  if (binaryString[i] === '1') {
+                    indicesOfOnes.push(i);
+                    k+=1;
+                  }
+                }
+                for (let i = 0; i < k; i++) {
+                  let lightIndex = 7-indicesOfOnes[i];
+                  if (lightIndex < 2 || lightIndex==3 || lightIndex==5 || lightIndex==7) { 
+                    if(lightIndex==3){
+                      lightIndex=2;
+                    }
+                    if(lightIndex==5){
+                      lightIndex=3;
+                    }
+                    if(lightIndex==7){
+                      lightIndex=4;
+                    }
+                    const bitValue = true; 
+                    setPortC((prevPortC) => {
+                      const newLights = [...prevPortC.lights];
+                      newLights[lightIndex] = bitValue;
+                      return { ...prevPortC, lights: newLights };
+                    });
+                  }
+                }
               }
             }
           }
         }
-        else if(parts[1]=="C4"){
-          if(controlword[4]=="0"){
+        else if(model == "dac"){
+          if(["C8"].includes(parts[1])){
+            crotrue = true;
+            let varil = parseInt(parts[2],16);
             if(parts[2]=="AL"){
-              const valnew = registers["AX"];
-              let binaryString = parseInt(valnew, 16).toString(2);
-              binaryString = binaryString.padStart(8, '0');
-              const indicesOfOnes = [];
-              let k=0;
-              for (let i = 0; i < 8; i++) {
-                if (binaryString[i] === '1') {
-                  indicesOfOnes.push(i);
-                  k+=1;
-                }
-              }
-              for (let i = 0; i < k; i++) {
-                let lightIndex = 7-indicesOfOnes[i];
-                if (lightIndex < 2 || lightIndex==3 || lightIndex==5 || lightIndex==7) { 
-                  if(lightIndex==3){
-                    lightIndex=2;
-                  }
-                  if(lightIndex==5){
-                    lightIndex=3;
-                  }
-                  if(lightIndex==7){
-                    lightIndex=4;
-                  }
-                  const bitValue = true; 
-                  setPortC((prevPortC) => {
-                    const newLights = [...prevPortC.lights];
-                    newLights[lightIndex] = bitValue;
-                    return { ...prevPortC, lights: newLights };
-                  });
-                }
-              }
+              varil = registers["AX"];
+              console.log(varil);
             }
+            croval = varil;
           }
         }
         break;
       case "IN":
-        if(["C0"].includes(parts[2])){
-          console.log(controlword);
-          if(controlword[3]=="1"){
-          const binaryString = portA.map(bit => (bit ? '1' : '0')).join('');
-          const hexValue = parseInt(binaryString, 2).toString(16).toUpperCase();
-          if(parts[1]=="AL"){
+        if(model == "parallel_interface"){
+          if(["C0"].includes(parts[2])){
+            console.log(controlword);
+            if(controlword[3]=="1"){
+            const binaryString = portA.map(bit => (bit ? '1' : '0')).join('');
+            const hexValue = parseInt(binaryString, 2).toString(16).toUpperCase();
+            if(parts[1]=="AL"){
+              registers["AX"] = hexValue;
+            }
+          }
+        }
+        if(["C4"].includes(parts[2])){
+          const orderedPortC = [
+            portC.lights[4], 
+            portC.buttons[2], 
+            portC.lights[3], 
+            portC.buttons[1], 
+            portC.lights[2], 
+            portC.buttons[0], 
+            portC.lights[1], 
+            portC.lights[0]
+        ];
+          const binaryString = orderedPortC.map(bit => (bit ? '1' : '0')).join('');
+          const bcdValue = parseInt(binaryString, 2); // Convert binary string to decimal as BCD
+          const hexValue = bcdValue.toString(16).toUpperCase();
+          if (parts[1] === "AL") {
             registers["AX"] = hexValue;
           }
         }
       }
-      if(["C4"].includes(parts[2])){
-        const orderedPortC = [
-          portC.lights[0], 
-          portC.lights[1], 
-          portC.buttons[0],
-          portC.lights[2], 
-          portC.buttons[1], 
-          portC.lights[3], 
-          portC.buttons[2], 
-          portC.lights[4]
-        ];
-        const binaryString = orderedPortC.map(bit => (bit ? '1' : '0')).join('');
-        const hexValue = parseInt(binaryString, 2).toString(16).toUpperCase();
-        if (parts[1] === "AL") {
-          registers["AX"] = hexValue;
-        }
-      }
       break;
+      case "AND":
+        let hex1=0;
+        let hex2="";
+        if (parts[1] === "AL") {
+          hex1 = registers["AX"];
+        }
+        hex2=parts[2];
+        if(hex2=="20"){
+          hex2 = "10";
+        }
+        const decimal1 = parseInt(hex1,16);
+        const decimal2 = parseInt(hex2,16);
+        const andR = decimal1 & decimal2;
+        console.log(andR);
+        if(andR==0){
+          flag["ZF"] = 0;
+        }
+        else{
+          flag["ZF"] = 1;
+        }
     }
 
     i++;
   }
+  interupt = false;
+  crotrue = false;
   return { registers, memory, flag, pointers };
 };
 
@@ -551,7 +593,7 @@ function Compiler() {
   const handleSubmit = (event) => {
     event.preventDefault();
     if (Object.keys(hexDict).length > 0) {
-      const processedResults = processAssemblyCode(code, hexDict,setPortC,setPortB,portA,portC);
+      const processedResults = processAssemblyCode(code, hexDict,setPortC,setPortB,portA,portC,interupt,model,crotrue,croval);
       setResults(processedResults);
     } else {
       console.warn("Memory not initialized yet.");
@@ -561,18 +603,21 @@ function Compiler() {
   const [text, setText] = useState('');
   const [text1, setText1] = useState('');  
 
+  const handleInter = () => {
+    interupt = true;
+  }
+
   const handleButtonClick = () => {
-    console.log(text + ' = ' + text1);
     setResults(prevResults => ({
       ...prevResults,
       memory: {
         ...prevResults.memory,
-        [text]: parseInt(text1, 10)
+        [text]: parseInt(text1, 16)
       }
     }));
     setHexDict(prevHexDict => ({
       ...prevHexDict,
-      [text]: parseInt(text1, 10) 
+      [text]: parseInt(text1, 16) 
     }));
   };
 
@@ -585,12 +630,18 @@ function Compiler() {
 
   const [data, setData] = useState(50); // Initialize with a default value
   const [change, setChange] = useState(1);
+  let croval = 0;
+  let crotrue = false;
+  let interupt = false;
+  let model = "parallel_interface";
 
   useEffect(() => {
     // Simulate incoming data
     const interval = setInterval(() => {
-      const newValue = 50; 
-      //setChange((prevChange) => (prevChange === 1 ? 0 : 1));
+      const newValue = croval; 
+      if(crotrue){
+        setChange((prevChange) => (prevChange === 1 ? 0 : 1));
+      }
 
       setData(newValue);
     }, 100); // Adjust interval as needed
@@ -611,7 +662,7 @@ function Compiler() {
             placeholder="Enter Address to store value"
           />
           <input
-            type="number"
+            type="text"
             value={text1}
             onChange={(e) => setText1(e.target.value)}
             style={{ width: '200px', marginRight: '16px',marginLeft: '5px', marginTop: '20px', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
@@ -625,7 +676,7 @@ function Compiler() {
             Submit
           </button>
         </div>
-        <CodeEditor code={code} setCode={setCode} handleSubmit={handleSubmit} />
+        <CodeEditor code={code} setCode={setCode} handleInter={handleInter} handleSubmit={handleSubmit} />
         {results && (
           <div>
             <div style={{marginTop:'20px'}}>
