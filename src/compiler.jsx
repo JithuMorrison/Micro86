@@ -659,7 +659,7 @@ function Compiler() {
 
   const [data, setData] = useState(50);
   const [change, setChange] = useState(1);
-  let model = "dac";
+  const [model,setModel] = useState("dac");
 
   return (
     <div className="app-container">
@@ -688,7 +688,7 @@ function Compiler() {
             Submit
           </button>
         </div>
-        <CodeEditor code={code} setCode={setCode} handleInter={handleInter} handleSubmit={handleSubmit} />
+        <CodeEditor code={code} setCode={setCode} handleInter={handleInter} handleSubmit={handleSubmit} model={model} setModel={setModel} />
         {results && (
           <div>
             <div style={{marginTop:'20px'}}>
