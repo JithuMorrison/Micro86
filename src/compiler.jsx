@@ -517,12 +517,11 @@ const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,m
             }
           }
         }
-        else if(model == "dac"){
+        else if(model == "dac"){//dac
           if(["C8"].includes(parts[1])){
             let varil = parseInt(parts[2],16);
             if(parts[2]=="AL"){
-              varil = registers["AX"];
-              console.log(varil);
+              varil = registers["AX"]*5;
             }
             setData(varil);
           }
@@ -589,7 +588,7 @@ const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,m
     });
 
     i++;
-    await delay(20);
+    await delay(1);
   }
   interupt = false;
   setResults({
