@@ -1,13 +1,35 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 // Seven-segment display for binary value
 const SevenSegmentDisplay = ({ value }) => {
-  // Function to convert a number to a 7-segment representation
+  const [displayData, setDisplayData] = useState([[0,0,0,0,0,0,0,0]]);
+
+  // Convert hex character to binary array [D, C, B, A]
+  const hexToBinary = (hexChar) => {
+    const binary = parseInt(hexChar, 16).toString(2).padStart(4, '0');
+    return binary.split('').map(Number);
+  };
+
+  // Handle value updates
+  useEffect(() => {
+    if (value === undefined || value === null) return;
+
+    // Convert to 2-digit hex string, upper case
+    const hexString = value.toString(16).toUpperCase().padStart(2, '0');
+    const newDigits = hexString.split("");
+    const combined = hexToBinary(newDigits[0]).concat(hexToBinary(newDigits[1]));
+
+    setDisplayData(prev => {
+      const updated = [...prev, combined];
+      return updated.slice(-2); // Keep last 2 only
+    });
+  }, [value]);
+
   const getSegmentStyle = (segment, active) => ({
     position: "absolute",
     width: "8px",
     height: "30px",
-    backgroundColor: active ? "lime" : "transparent",
+    backgroundColor: active ? "lime" : "#333",
     borderRadius: "3px",
     transformOrigin: "center",
     transition: "background-color 0.3s",
@@ -15,46 +37,45 @@ const SevenSegmentDisplay = ({ value }) => {
   });
 
   const segments = [
-    // Define the segment positions for a 7-segment display
-    { id: "a", transform: { top: "0px", left: "50%" }, rotate: "rotate(0deg)" },
-    { id: "b", transform: { top: "25%", left: "100%" }, rotate: "rotate(90deg)" },
-    { id: "c", transform: { bottom: "25%", left: "100%" }, rotate: "rotate(90deg)" },
-    { id: "d", transform: { bottom: "0px", left: "50%" }, rotate: "rotate(180deg)" },
-    { id: "e", transform: { bottom: "25%", left: "0%" }, rotate: "rotate(-90deg)" },
-    { id: "f", transform: { top: "25%", left: "0%" }, rotate: "rotate(-90deg)" },
-    { id: "g", transform: { top: "50%", left: "50%" }, rotate: "rotate(0deg)" },
+    { id: "d", transform: { top: "75%", left: "0%" }, rotate: "rotate(90deg)" },
+    { id: "c", transform: { top: "50%", left: "50%" }, rotate: "rotate(0deg)" },
+    { id: "b", transform: { top: "0px", left: "50%" }, rotate: "rotate(180deg)" },
+    { id: "a", transform: { top: "-25%", left: "0%" }, rotate: "rotate(-90deg)" },
+    { id: ".", transform: { top: "90%", left: "0%" }, rotate: "rotate(-90deg)" },
+    { id: "g", transform: { top: "25%", left: "0%" }, rotate: "rotate(-90deg)" },
+    { id: "f", transform: { top: "0px", left: "-50%" }, rotate: "rotate(0deg)" },
+    { id: "e", transform: { top: "50%", left: "-50%" }, rotate: "rotate(0deg)" },
   ];
-
-  // Mapping of segment states (1 = active, 0 = inactive) for each digit
-  const segmentMapping = [
-    [1, 0, 1, 1, 1, 0, 1],  // 0
-    [0, 0, 1, 0, 0, 1, 0],  // 1
-    [1, 0, 1, 1, 1, 0, 1],  // 2
-    [1, 0, 1, 1, 0, 1, 1],  // 3
-    [0, 1, 1, 1, 0, 1, 1],  // 4
-    [1, 1, 0, 1, 0, 1, 1],  // 5
-    [1, 1, 0, 1, 1, 1, 1],  // 6
-    [1, 0, 1, 0, 0, 1, 0],  // 7
-    [1, 1, 1, 1, 1, 1, 1],  // 8
-    [1, 1, 1, 1, 0, 1, 1],  // 9
-  ];
-
-  const currentValue = value % 10;  // Get the last digit of the value
-  const activeSegments = segmentMapping[currentValue];
 
   return (
-    <div style={{ position: "relative", width: "60px", height: "120px", margin: "auto" }}>
-      {segments.map((segment, index) => (
-        <div
-          key={segment.id}
-          style={{
-            ...getSegmentStyle(segment, activeSegments[index]),
-            transform: `translate(-50%, -50%) ${segment.rotate}`,
-            top: `${segment.transform.top}`,
-            left: `${segment.transform.left}`,
-          }}
-        />
-      ))}
+    <div style={{ display: "flex", gap: "20px", justifyContent: "center" }}>
+      {displayData.map((char, idx) => {
+        const activeSegments = char;
+
+        return (
+          <div
+            key={idx}
+            style={{
+              position: "relative",
+              width: "60px",
+              height: "120px",
+              marginTop: "30px",
+            }}
+          >
+            {segments.map((segment, index) => (
+              <div
+                key={segment.id}
+                style={{
+                  ...getSegmentStyle(segment, activeSegments[index]),
+                  transform: `translate(-50%, -50%) ${segment.rotate}`,
+                  top: segment.transform.top,
+                  left: segment.transform.left,
+                }}
+              />
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -79,7 +100,8 @@ const KeyboardMatrix = ({ onKeyPress }) => {
 
   const ctrlShiftStyle = {
     ...keyStyle,
-    gridColumn: "span 2",
+    gridColumn: "span 2", // Makes them take two grid columns
+    width: "105px", // Manually extend width (50px + 50px + gap)
     backgroundColor: "darkgray",
   };
 
@@ -122,7 +144,7 @@ const KeyboardMatrix = ({ onKeyPress }) => {
 
 // Main controller component
 const KeyboardDisplayController = ({onMouse}) => {
-  const [displayValue, setDisplayValue] = useState(0);
+  const [displayValue, setDisplayValue] = useState("60");
 
   const controllerStyle = {
     textAlign: "center",

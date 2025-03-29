@@ -605,10 +605,10 @@ const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,m
         const andr = decimal3 & decimal4;
         console.log(andr);
         if(andr==0){
-          flag["ZF"] = 0;
+          flag["ZF"] = 1;
         }
         else{
-          flag["ZF"] = 1;
+          flag["ZF"] = 0;
         }
     }
     setResults({
