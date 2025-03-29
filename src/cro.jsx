@@ -21,7 +21,7 @@ const CROSignal = ({ data,change }) => {
           fill="none"
           stroke="#00ff00"
           strokeWidth="2"
-          points={points.map((point, index) => `${index * 10},${100 - point}`).join(" ")}
+          points={points.map((point, index) => `${index * 20},${150 - (point / 10)}`).join(" ")}
         />
       </svg>
     </div>

@@ -5,8 +5,9 @@ import TableComponent from "./Table";
 import ParallelInterface from "./parallelinterface";
 import CROSignal from "./cro";
 import KeyboardDisplayController from "./Keyboard";
+import StepperMotor from "./stepper";
 
-const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC,interupt,model,crotrue,croval) => {
+const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC,interupt,model,setData) => {
   const registers = { AX: 0, BX: 0, CX: 0, DX: 0 };
   const memory = { ...hexDict };
   const pointers = { SI: 0, DI: 0, BP: 0, SP: 0 };
@@ -142,18 +143,18 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC,interup
           if (["SI", "DI", "BP", "SP"].includes(addr)) {
             const reg = parts[2];
             memory[pointers[addr].toString(16).toUpperCase()] =
-              registers[ch[reg]];
+            parseInt(registers[ch[reg]].toString(16).slice(-2),16);
             vki = 1;
           } else {
             const reg = parts[2];
-            memory[addr] = registers[ch[reg]];
+            memory[addr] = parseInt(registers[ch[reg]].toString(16).slice(-2),16);
           }
         } else if (
           ["AL", "BL", "CL", "DL"].includes(parts[1]) &&
           ["AL", "BL", "CL", "DL"].includes(parts[2])
         ) {
           const [dest, src] = [parts[1], parts[2]];
-          registers[ch[dest]] = registers[ch[src]];
+          registers[ch[dest]] = parseInt(registers[ch[src]].toString(16).slice(-2),16);
         } else if (
           ["AH", "BH", "CH", "DH"].includes(parts[1]) &&
           parts[2] != null &&
@@ -361,7 +362,8 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC,interup
         break;
       
       case "JMP":
-        i = parseInt(parts[1])-1;
+        i = parseInt(parts[1])-2;
+        flag["CF"] = 0;
         console.log("jump"+i);
         break;
 
@@ -372,6 +374,17 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC,interup
           registers["CX"]++;
         } else if (["CL"].includes(parts[1])) {
           registers["CX"]++;
+        } else if (["AL"].includes(parts[1])) {
+          registers["AX"]++;
+          if(registers["AX"]>255){
+            registers["AX"]-=256;
+            flag["CF"] = 1;
+          }
+          else{
+            flag["CF"] = 0;
+          }
+        } else if (["BL"].includes(parts[1])) {
+          registers["BX"]++;
         } else if (["SI", "DI", "BP", "SP"].includes(parts[1])) {
           pointers[parts[1]] = pointers[parts[1]] + vki;
         }
@@ -500,13 +513,12 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC,interup
         }
         else if(model == "dac"){
           if(["C8"].includes(parts[1])){
-            crotrue = true;
             let varil = parseInt(parts[2],16);
             if(parts[2]=="AL"){
               varil = registers["AX"];
               console.log(varil);
             }
-            croval = varil;
+            setData(varil);
           }
         }
         break;
@@ -567,7 +579,6 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC,interup
     i++;
   }
   interupt = false;
-  crotrue = false;
   return { registers, memory, flag, pointers };
 };
 
@@ -593,7 +604,7 @@ function Compiler() {
   const handleSubmit = (event) => {
     event.preventDefault();
     if (Object.keys(hexDict).length > 0) {
-      const processedResults = processAssemblyCode(code, hexDict,setPortC,setPortB,portA,portC,interupt,model,crotrue,croval);
+      const processedResults = processAssemblyCode(code, hexDict,setPortC,setPortB,portA,portC,interupt,model,setData);
       setResults(processedResults);
     } else {
       console.warn("Memory not initialized yet.");
@@ -628,26 +639,10 @@ function Compiler() {
     buttons: Array(3).fill(false)  // 3 Buttons for Port C
   });
 
-  const [data, setData] = useState(50); // Initialize with a default value
+  const [data, setData] = useState(50);
   const [change, setChange] = useState(1);
-  let croval = 0;
-  let crotrue = false;
   let interupt = false;
-  let model = "parallel_interface";
-
-  useEffect(() => {
-    // Simulate incoming data
-    const interval = setInterval(() => {
-      const newValue = croval; 
-      if(crotrue){
-        setChange((prevChange) => (prevChange === 1 ? 0 : 1));
-      }
-
-      setData(newValue);
-    }, 100); // Adjust interval as needed
-
-    return () => clearInterval(interval);
-  }, []);
+  let model = "dac";
 
   return (
     <div className="app-container">
@@ -723,6 +718,7 @@ function Compiler() {
         <ParallelInterface portA={portA} portB={portB} portC={portC} setPortA={setPortA} setPortC={setPortC}/>
         <KeyboardDisplayController/>
       </div>
+      <StepperMotor/>
     </div>
   );
 }
