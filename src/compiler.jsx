@@ -7,7 +7,7 @@ import CROSignal from "./cro";
 import KeyboardDisplayController from "./Keyboard";
 import StepperMotor from "./stepper";
 
-const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC,interupt,model,setData) => {
+const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,interupt,model,setData,setResults) => {
   const registers = { AX: 0, BX: 0, CX: 0, DX: 0 };
   const memory = { ...hexDict };
   const pointers = { SI: 0, DI: 0, BP: 0, SP: 0 };
@@ -575,12 +575,26 @@ const processAssemblyCode = (code, hexDict,setPortC,setPortB,portA,portC,interup
           flag["ZF"] = 1;
         }
     }
+    setResults({
+      registers: { ...registers },
+      memory: { ...memory },
+      flag: { ...flag },
+      pointers: { ...pointers }
+    });
 
     i++;
+    await delay(20);
   }
   interupt = false;
-  return { registers, memory, flag, pointers };
+  setResults({
+    registers,
+    memory,
+    flag,
+    pointers
+  });
 };
+
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 function Compiler() {
   const [hexDict, setHexDict] = useState({});
@@ -604,8 +618,7 @@ function Compiler() {
   const handleSubmit = (event) => {
     event.preventDefault();
     if (Object.keys(hexDict).length > 0) {
-      const processedResults = processAssemblyCode(code, hexDict,setPortC,setPortB,portA,portC,interupt,model,setData);
-      setResults(processedResults);
+      processAssemblyCode(code, hexDict,setPortC,setPortB,portA,portC,interupt,model,setData,setResults);
     } else {
       console.warn("Memory not initialized yet.");
     }
