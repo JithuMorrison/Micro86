@@ -11,7 +11,7 @@ let interupt = false;
 let keyboardValue = -1;
 let keypressed = false;
 
-const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,model,setData,setResults) => {
+const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,model,setData,setResults,setDisplayValue) => {
   const registers = { AX: 0, BX: 0, CX: 0, DX: 0 };
   const memory = { ...hexDict };
   const pointers = { SI: 0, DI: 0, BP: 0, SP: 0 };
@@ -528,6 +528,16 @@ const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,m
             setData(varil);
           }
         }
+        else if(model == "keyboard_display"){
+          if(["C4"].includes(parts[1])){
+            if(parts[2]=="AL"){
+              setDisplayValue(registers["AX"]);
+            }
+            else{
+              setDisplayValue(parts[2].toString());
+            }
+          }
+        }
         break;
       case "IN":
         if(model == "parallel_interface"){
@@ -654,7 +664,7 @@ function Compiler() {
   const handleSubmit = (event) => {
     event.preventDefault();
     if (Object.keys(hexDict).length > 0) {
-      processAssemblyCode(code, hexDict,setPortC,setPortB,portA,portC,model,setData,setResults);
+      processAssemblyCode(code, hexDict,setPortC,setPortB,portA,portC,model,setData,setResults,setDisplayValue);
     } else {
       console.warn("Memory not initialized yet.");
     }
@@ -691,6 +701,7 @@ function Compiler() {
   const [data, setData] = useState(50);
   const [change, setChange] = useState(1);
   const [model,setModel] = useState("dac");
+  const [displayValue, setDisplayValue] = useState("60");
 
   const handleKeyPress = (key,press) => {
     const hexValue = parseInt(key, 16); 
@@ -770,7 +781,7 @@ function Compiler() {
       </div>
       <div>
         <ParallelInterface portA={portA} portB={portB} portC={portC} setPortA={setPortA} setPortC={setPortC}/>
-        <KeyboardDisplayController onMouse={handleKeyPress}/>
+        <KeyboardDisplayController onMouse={handleKeyPress} displayValue={displayValue}/>
       </div>
       <StepperMotor/>
     </div>

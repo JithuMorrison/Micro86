@@ -143,8 +143,7 @@ const KeyboardMatrix = ({ onKeyPress }) => {
 };
 
 // Main controller component
-const KeyboardDisplayController = ({onMouse}) => {
-  const [displayValue, setDisplayValue] = useState("60");
+const KeyboardDisplayController = ({onMouse, displayValue}) => {
 
   const controllerStyle = {
     textAlign: "center",
