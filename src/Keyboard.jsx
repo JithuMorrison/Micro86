@@ -108,7 +108,7 @@ const KeyboardMatrix = ({ onKeyPress }) => {
 };
 
 // Main controller component
-const KeyboardDisplayController = () => {
+const KeyboardDisplayController = ({keyboardValue,setKeyboardValue,keypress,setkeypress}) => {
   const [displayValue, setDisplayValue] = useState(0);
 
   const handleKeyPress = (key) => {
