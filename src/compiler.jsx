@@ -7,7 +7,9 @@ import CROSignal from "./cro";
 import KeyboardDisplayController from "./Keyboard";
 import StepperMotor from "./stepper";
 
-const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,interupt,model,setData,setResults) => {
+let interupt = false;
+
+const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,model,setData,setResults) => {
   const registers = { AX: 0, BX: 0, CX: 0, DX: 0 };
   const memory = { ...hexDict };
   const pointers = { SI: 0, DI: 0, BP: 0, SP: 0 };
@@ -191,7 +193,9 @@ const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,i
             vki = 1;
           } else {
             const reg = parts[2];
-            memory[addr] = registers[ch[reg]];
+            let hexVal = parseInt(registers[ch[reg]]);
+            let secondByteFromRight = (hexVal >> 8) & 0xFF;
+            memory[addr] = secondByteFromRight.toString(16).padStart(2, '0');
           }
         } else if (
           ["AH", "BH", "CH", "DH"].includes(parts[1]) &&
@@ -367,11 +371,11 @@ const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,i
         console.log("jump"+i);
         break;
 
-      case "INC":
+      case "INC": //increment
         if (["CX"].includes(parts[1])) {
           registers["CX"]++;
         } else if (["CH"].includes(parts[1])) {
-          registers["CX"]++;
+          registers["CX"]+=256;
         } else if (["CL"].includes(parts[1])) {
           registers["CX"]++;
         } else if (["AL"].includes(parts[1])) {
@@ -379,9 +383,11 @@ const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,i
           if(registers["AX"]>255){
             registers["AX"]-=256;
             flag["CF"] = 1;
+            flag["ZF"] = 0;
           }
           else{
             flag["CF"] = 0;
+            flag["ZF"] = 1;
           }
         } else if (["BL"].includes(parts[1])) {
           registers["BX"]++;
@@ -618,7 +624,7 @@ function Compiler() {
   const handleSubmit = (event) => {
     event.preventDefault();
     if (Object.keys(hexDict).length > 0) {
-      processAssemblyCode(code, hexDict,setPortC,setPortB,portA,portC,interupt,model,setData,setResults);
+      processAssemblyCode(code, hexDict,setPortC,setPortB,portA,portC,model,setData,setResults);
     } else {
       console.warn("Memory not initialized yet.");
     }
@@ -654,7 +660,6 @@ function Compiler() {
 
   const [data, setData] = useState(50);
   const [change, setChange] = useState(1);
-  let interupt = false;
   let model = "dac";
 
   return (
