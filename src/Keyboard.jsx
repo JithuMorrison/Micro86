@@ -95,26 +95,34 @@ const KeyboardMatrix = ({ onKeyPress }) => {
       {keys.map((key) => (
         <button
           key={key}
-          onClick={() => onKeyPress(key)}
+          onMouseDown={() => onKeyPress(key, true)}
+          onMouseUp={() => onKeyPress(key, false)}
           style={keyStyle}
         >
           {key}
         </button>
       ))}
-      <button style={ctrlShiftStyle} onClick={() => onKeyPress("CTRL")}>CTRL</button>
-      <button style={ctrlShiftStyle} onClick={() => onKeyPress("SHIFT")}>SHIFT</button>
+      <button
+        style={ctrlShiftStyle}
+        onMouseDown={() => onKeyPress("CTRL", true)}
+        onMouseUp={() => onKeyPress("CTRL", false)}
+      >
+        CTRL
+      </button>
+      <button
+        style={ctrlShiftStyle}
+        onMouseDown={() => onKeyPress("SHIFT", true)}
+        onMouseUp={() => onKeyPress("SHIFT", false)}
+      >
+        SHIFT
+      </button>
     </div>
   );
 };
 
 // Main controller component
-const KeyboardDisplayController = ({keyboardValue,setKeyboardValue,keypress,setkeypress}) => {
+const KeyboardDisplayController = ({onMouse}) => {
   const [displayValue, setDisplayValue] = useState(0);
-
-  const handleKeyPress = (key) => {
-    // Increment the 8-bit value on each key press (for demonstration)
-    setDisplayValue((prev) => (prev + 1) & 0xff); // Ensure it's 8-bit (0-255)
-  };
 
   const controllerStyle = {
     textAlign: "center",
@@ -131,7 +139,7 @@ const KeyboardDisplayController = ({keyboardValue,setKeyboardValue,keypress,setk
       <div style={displayContainerStyle}>
         <SevenSegmentDisplay value={displayValue} />
       </div>
-      <KeyboardMatrix onKeyPress={handleKeyPress} />
+      <KeyboardMatrix onKeyPress={onMouse}/>
     </div>
   );
 };

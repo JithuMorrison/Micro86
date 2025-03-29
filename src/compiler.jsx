@@ -8,8 +8,10 @@ import KeyboardDisplayController from "./Keyboard";
 import StepperMotor from "./stepper";
 
 let interupt = false;
+let keyboardValue = -1;
+let keypressed = false;
 
-const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,model,setData,setResults,keypress,keyboardValue) => {
+const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,model,setData,setResults) => {
   const registers = { AX: 0, BX: 0, CX: 0, DX: 0 };
   const memory = { ...hexDict };
   const pointers = { SI: 0, DI: 0, BP: 0, SP: 0 };
@@ -558,6 +560,17 @@ const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,m
           }
         }
       }
+      else if(model == "keyboard_display"){
+        if(["C2"].includes(parts[2])){
+          console.log(keypressed);
+          if(parts[1]=="AL" && keypressed){
+            registers["AX"] = (0).toString(16).toUpperCase();
+          }
+          else{
+            registers["AX"] = (1).toString(16).toUpperCase();
+          }
+        }
+      }
       break;
       case "AND":
         let hex1=0;
@@ -641,7 +654,7 @@ function Compiler() {
   const handleSubmit = (event) => {
     event.preventDefault();
     if (Object.keys(hexDict).length > 0) {
-      processAssemblyCode(code, hexDict,setPortC,setPortB,portA,portC,model,setData,setResults,keypress,keyboardValue);
+      processAssemblyCode(code, hexDict,setPortC,setPortB,portA,portC,model,setData,setResults);
     } else {
       console.warn("Memory not initialized yet.");
     }
@@ -679,8 +692,11 @@ function Compiler() {
   const [change, setChange] = useState(1);
   const [model,setModel] = useState("dac");
 
-  const [keyboardValue,setKeyboardValue] = useState(-1)
-  const [keypress,setKeyPress] = useState(false);
+  const handleKeyPress = (key,press) => {
+    const hexValue = parseInt(key, 16); 
+    keypressed = press;
+    keyboardValue = hexValue;
+  };
 
   return (
     <div className="app-container">
@@ -754,7 +770,7 @@ function Compiler() {
       </div>
       <div>
         <ParallelInterface portA={portA} portB={portB} portC={portC} setPortA={setPortA} setPortC={setPortC}/>
-        <KeyboardDisplayController keyboardValue={keyboardValue} setKeyboardValue={setKeyboardValue} keypress={keypress} setkeypress={setKeyPress}/>
+        <KeyboardDisplayController onMouse={handleKeyPress}/>
       </div>
       <StepperMotor/>
     </div>

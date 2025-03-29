@@ -23,6 +23,7 @@ const CodeEditor = ({code,setCode,handleSubmit,handleInter,model,setModel}) => {
               DAC
             </option>
             <option value="parallel_interface">Parallel Interface</option>
+            <option value="keyboard_display">keyboard Display Controller</option>
             <option value="steppermotor">Stepper Motor</option>
           </select>
             <button className="btn" onClick={handleInter}>Interrupt</button>
