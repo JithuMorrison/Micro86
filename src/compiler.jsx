@@ -11,7 +11,7 @@ let interupt = false;
 let keyboardValue = -1;
 let keypressed = false;
 
-const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,model,setData,setResults,setDisplayValue) => {
+const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,model,setData,setResults,setDisplayValue,handleStepsChange) => {
   const registers = { AX: 0, BX: 0, CX: 0, DX: 0 };
   const memory = { ...hexDict };
   const pointers = { SI: 0, DI: 0, BP: 0, SP: 0 };
@@ -538,6 +538,24 @@ const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,m
             }
           }
         }
+        else if(model == "steppermotor"){
+          if(["C0"].includes(parts[1])){
+            if(parts[2]=="AL"){
+              if(registers["AX"]=="8"){
+                handleStepsChange({ target: { value: 50 } });
+              }
+              else if(registers["AX"]=="4"){
+                handleStepsChange({ target: { value: 100 } });
+              }
+              else if(registers["AX"]=="2"){
+                handleStepsChange({ target: { value: 150 } });
+              }
+              else if(registers["AX"]=="1"){
+                handleStepsChange({ target: { value: 0 } });
+              }
+            }
+          }
+        }
         break;
       case "IN":
         if(model == "parallel_interface"){
@@ -664,7 +682,7 @@ function Compiler() {
   const handleSubmit = (event) => {
     event.preventDefault();
     if (Object.keys(hexDict).length > 0) {
-      processAssemblyCode(code, hexDict,setPortC,setPortB,portA,portC,model,setData,setResults,setDisplayValue);
+      processAssemblyCode(code, hexDict,setPortC,setPortB,portA,portC,model,setData,setResults,setDisplayValue,handleStepsChange);
     } else {
       console.warn("Memory not initialized yet.");
     }
@@ -702,12 +720,41 @@ function Compiler() {
   const [change, setChange] = useState(1);
   const [model,setModel] = useState("dac");
   const [displayValue, setDisplayValue] = useState("60");
+  const [inputSteps, setInputSteps] = useState(0);
 
   const handleKeyPress = (key,press) => {
     const hexValue = parseInt(key, 16); 
     keypressed = press;
     keyboardValue = hexValue;
   };
+
+  const [totalSteps, setTotalSteps] = useState(0);
+  const [prevInput, setPrevInput] = useState(0);
+  const [angle, setAngle] = useState(0);
+
+  const handleStepsChange = (event) => {
+    const newInput = parseInt(event.target.value, 10) % 200;
+    if (isNaN(newInput)) return;
+  
+    let delta = newInput - prevInput;
+  
+    // Handle wrap-around (both forward and reverse)
+    if (delta > 100) {
+      // Likely reverse from 0 to 199 (e.g., 10 → 195 should be -15 steps)
+      delta -= 200;
+    } else if (delta < -100) {
+      // Likely forward from 199 to 0 (e.g., 195 → 10 should be +15 steps)
+      delta += 200;
+    }
+  
+    const updatedSteps = totalSteps + delta;
+    const newAngle = updatedSteps * 1.8;
+  
+    setInputSteps(newInput);
+    setPrevInput(newInput);
+    setTotalSteps(updatedSteps);
+    setAngle(newAngle);
+  };  
 
   return (
     <div className="app-container">
@@ -783,7 +830,7 @@ function Compiler() {
         <ParallelInterface portA={portA} portB={portB} portC={portC} setPortA={setPortA} setPortC={setPortC}/>
         <KeyboardDisplayController onMouse={handleKeyPress} displayValue={displayValue}/>
       </div>
-      <StepperMotor/>
+      <StepperMotor inputSteps={inputSteps} angle={angle} handleStepsChange={handleStepsChange}/>
     </div>
   );
 }

@@ -1,15 +1,6 @@
 import React, { useState } from "react";
 
-const StepperMotor = () => {
-  const [steps, setSteps] = useState(0);
-  const [angle, setAngle] = useState(0);
-
-  // Function to handle the step change and rotate motor
-  const handleStepsChange = (event) => {
-    const stepValue = event.target.value;
-    setSteps(stepValue);
-    setAngle(stepValue * 1.8); // Assuming 1 step = 1.8 degrees (for 200 steps per revolution motor)
-  };
+const StepperMotor = ({inputSteps,angle,handleStepsChange}) => {
 
   return (
     <div className="container">
@@ -20,7 +11,7 @@ const StepperMotor = () => {
           style={{
             transform: `rotate(${angle}deg)`,
             transition: "transform 0.5s ease",
-            zIndex: '999'
+            zIndex: "999",
           }}
         />
         <div className="motor-body"></div>
@@ -28,17 +19,17 @@ const StepperMotor = () => {
 
       <div className="controls">
         <label>
-          Enter number of steps (200 steps = 360°):
+          Enter number of steps (0–200 per revolution):
           <input
             type="number"
-            value={steps}
+            value={inputSteps}
             onChange={handleStepsChange}
             min="0"
             max="200"
             className="input"
           />
         </label>
-        <p>Rotation: {angle.toFixed(2)}°</p>
+        <p>Total Rotation: {angle.toFixed(2)}°</p>
       </div>
 
       <style>
