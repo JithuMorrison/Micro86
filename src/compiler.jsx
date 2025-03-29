@@ -551,7 +551,7 @@ const processAssemblyCode = async (code, hexDict,setPortC,setPortB,portA,portC,m
                 handleStepsChange({ target: { value: 150 } });
               }
               else if(registers["AX"]=="1"){
-                handleStepsChange({ target: { value: 0 } });
+                handleStepsChange({ target: { value: 200 } });
               }
             }
           }
@@ -733,28 +733,10 @@ function Compiler() {
   const [angle, setAngle] = useState(0);
 
   const handleStepsChange = (event) => {
-    const newInput = parseInt(event.target.value, 10) % 200;
-    if (isNaN(newInput)) return;
-  
-    let delta = newInput - prevInput;
-  
-    // Handle wrap-around (both forward and reverse)
-    if (delta > 100) {
-      // Likely reverse from 0 to 199 (e.g., 10 → 195 should be -15 steps)
-      delta -= 200;
-    } else if (delta < -100) {
-      // Likely forward from 199 to 0 (e.g., 195 → 10 should be +15 steps)
-      delta += 200;
-    }
-  
-    const updatedSteps = totalSteps + delta;
-    const newAngle = updatedSteps * 1.8;
-  
-    setInputSteps(newInput);
-    setPrevInput(newInput);
-    setTotalSteps(updatedSteps);
-    setAngle(newAngle);
-  };  
+    const stepValue = event.target.value;
+    setInputSteps(stepValue % 200);
+    setAngle(stepValue * 1.8); // Assuming 1 step = 1.8 degrees (for 200 steps per revolution motor)
+  };
 
   return (
     <div className="app-container">
